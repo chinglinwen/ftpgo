@@ -1,64 +1,87 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	urlpkg "net/url"
-	"os"
-	"path"
+        "flag"
+        "fmt"
+        urlpkg "net/url"
+        "os"
+        "path"
 
-	"github.com/secsy/goftp"
+        "github.com/secsy/goftp"
 )
 
+var exmaple = `
+Example: 
+   ./ftp ftp://ip/pub/test
+   ./ftp ftp://user:pass@ip/pub/test
+   ./ftp -o file ftp://ip/pub/test
+   ./ftp -o file ftp://ip/pub/test
+`
+
 func main() {
-	flag.Usage = func() {
-		fmt.Println("Usage: ./ftp ftp://ip/pub/test")
-	}
-	flag.Parse()
+        flag.Usage = func() {
+                fmt.Println("Usage of ftp:")
+                flag.PrintDefaults()
+                fmt.Printf(exmaple)
+        }
+        outfile := flag.String("o", "", "output filename(or path/filename)")
+        version := flag.Bool("v", false, "show version.")
+        flag.Parse()
 
-	if len(os.Args) <= 1 {
-		fmt.Println("url not provided")
-		os.Exit(1)
-	}
-	url := os.Args[1]
+        if *version {
+                fmt.Println("version=1.0.1, 2016-12-16")
+                os.Exit(1)
+        }
 
-	u, err := urlpkg.Parse(url)
-	if err != nil {
-		checkErr(err)
-	}
+        args := flag.Args()
+        fmt.Println(args)
+        if len(args) < 1 {
+                fmt.Println("url not provided")
+                os.Exit(1)
+        }
+        url := args[0]
 
-	var config goftp.Config
+        u, err := urlpkg.Parse(url)
+        checkErr(err)
 
-	if u.User != nil {
-		user := u.User.Username()
-		if user != "" {
-			config.User = user
-		}
-		if pass, ok := u.User.Password(); ok {
-			config.Password = pass
-		}
-	}
+        var config goftp.Config
 
-	// Create client object with default config
-	client, err := goftp.DialConfig(config, u.Host)
-	if err != nil {
-		checkErr(err)
-	}
+        if u.User != nil {
+                user := u.User.Username()
+                if user != "" {
+                        config.User = user
+                }
+                if pass, ok := u.User.Password(); ok {
+                        config.Password = pass
+                }
+        }
 
-	// Download a file to disk
-	filename := path.Base(u.Path)
-	file, err := os.Create(filename)
-	if err != nil {
-		checkErr(err)
-	}
+        client, err := goftp.DialConfig(config, u.Host)
+        checkErr(err)
 
-	err = client.Retrieve(u.Path, file)
-	if err != nil {
-		checkErr(err)
-	}
+        filename := path.Base(u.Path)
+        if *outfile != "" {
+                outDir := path.Dir(*outfile)
+                if outDir != "." {
+                        checkErr(os.MkdirAll(outDir, 0777))
+                }
+                filename = *outfile
+        }
+        tmpfilename := filename + ".tmp"
+        file, err := os.Create(tmpfilename)
+        checkErr(err)
+
+        // Download a file to disk
+        err = client.Retrieve(u.Path, file)
+        checkErr(err)
+
+        err = os.Rename(tmpfilename, *outfile)
+        checkErr(err)
 }
 
 func checkErr(err error) {
-	fmt.Println(err)
-	os.Exit(1)
+        if err != nil {
+                fmt.Println(err)
+                os.Exit(1)
+        }
 }
