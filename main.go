@@ -10,7 +10,7 @@ import (
         "github.com/secsy/goftp"
 )
 
-var exmaple = `
+var example = `
 Example: 
    ./ftp ftp://ip/pub/test
    ./ftp ftp://user:pass@ip/pub/test
@@ -22,7 +22,7 @@ func main() {
         flag.Usage = func() {
                 fmt.Println("Usage of ftp:")
                 flag.PrintDefaults()
-                fmt.Printf(exmaple)
+                fmt.Printf(example)
         }
         outfile := flag.String("o", "", "output filename(or path/filename)")
         version := flag.Bool("v", false, "show version.")
@@ -70,6 +70,7 @@ func main() {
         tmpfilename := filename + ".tmp"
         file, err := os.Create(tmpfilename)
         checkErr(err)
+        defer file.Close()
 
         // Download a file to disk
         err = client.Retrieve(u.Path, file)
