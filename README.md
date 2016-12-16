@@ -12,6 +12,7 @@ Usage of ftp:
 
 Example: 
    ./ftp ftp://ip/pub/test
+   ./ftp ftp://ip:port/pub/test  
    ./ftp ftp://user:pass@ip/pub/test
    ./ftp -o file ftp://ip/pub/test
    ./ftp -o dir1/file ftp://ip/pub/test
